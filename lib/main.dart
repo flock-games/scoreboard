@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:starter/ScorePanel.dart';
 
 void main() {
   runApp(const ScoreboardApp());
@@ -30,35 +31,38 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: GestureDetector(
-        onTap: _incrementCounter,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          height: double.infinity,
-          width: double.infinity,
-          child: Center(
-            child: Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: OrientationBuilder(
+          builder: (BuildContext context, Orientation orientation) {
+        const scorePanels = [
+          Expanded(
+            child: ScorePanel(
+              panelColor: Colors.blue,
+              textColor: Colors.white,
             ),
           ),
-        ),
-      ),
+          Expanded(
+            child: ScorePanel(
+              panelColor: Colors.red,
+              textColor: Colors.white,
+            ),
+          ),
+        ];
+        if (orientation == Orientation.landscape) {
+          return const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: scorePanels,
+          );
+        }
+        return const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: scorePanels,
+        );
+      }),
     );
   }
 }
