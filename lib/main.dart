@@ -41,6 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
         textColor: Colors.white),
   ];
   int numPlayers = 2;
+  int incrementVal = 1;
   bool showingSettings = false;
 
   void resetScores() {
@@ -65,6 +66,12 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void setIncrementVal(int val) {
+    setState(() {
+      incrementVal = val;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Widget> scorePanels = <Widget>[];
@@ -77,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
             textColor: player.textColor,
             onIncrementScore: () => {
               setState(() {
-                player.score++;
+                player.score += incrementVal;
               })
             },
           ),
@@ -104,8 +111,10 @@ class _MyHomePageState extends State<MyHomePage> {
       color: Colors.black,
       child: SettingsPanel(
         numPlayers: players.length,
+        incrementVal: incrementVal,
         onResetScores: resetScores,
         onSetNumPlayers: setNumPlayers,
+        onSetIncrementVal: setIncrementVal,
       ),
     );
 
