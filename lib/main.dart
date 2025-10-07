@@ -67,28 +67,51 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> scorePanels = <Widget>[];
+    for (Player player in players) {
+      scorePanels.add(
+        Expanded(
+          child: ScorePanel(
+            score: player.score,
+            panelColor: player.bgColor,
+            textColor: player.textColor,
+            onIncrementScore: () => {
+              setState(() {
+                player.score++;
+              })
+            },
+          ),
+        ),
+      );
+    }
+
+    final settingsIconButton = IconButton(
+      icon: const Icon(Icons.settings, color: Colors.white),
+      onPressed: () {
+        setState(() {
+          showingSettings = !showingSettings;
+        });
+      },
+      padding: const EdgeInsets.all(16),
+      iconSize: 32,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.black,
+        shape: const CircleBorder(),
+      ),
+    );
+
+    final settingsPanel = Container(
+      color: Colors.black,
+      child: SettingsPanel(
+        numPlayers: players.length,
+        onResetScores: resetScores,
+        onSetNumPlayers: setNumPlayers,
+      ),
+    );
+
     return Material(
       child: OrientationBuilder(
           builder: (BuildContext context, Orientation orientation) {
-        List<Widget> scorePanels = <Widget>[];
-
-        for (Player player in players) {
-          scorePanels.add(
-            Expanded(
-              child: ScorePanel(
-                score: player.score,
-                panelColor: player.bgColor,
-                textColor: player.textColor,
-                onIncrementScore: () => {
-                  setState(() {
-                    player.score++;
-                  })
-                },
-              ),
-            ),
-          );
-        }
-
         if (orientation == Orientation.landscape) {
           return Stack(
             alignment: Alignment.bottomCenter,
@@ -98,39 +121,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: scorePanels,
               ),
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white),
-                onPressed: () {
-                  setState(() {
-                    showingSettings = !showingSettings;
-                  });
-                },
-                padding: const EdgeInsets.all(16),
-                iconSize: 32,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  shape: const CircleBorder(),
-                ),
-              ),
+              settingsIconButton,
               if (showingSettings)
                 Positioned(
                   bottom: 60,
-                  child: Container(
-                    color: Colors.black,
-                    child: SettingsPanel(
-                      numPlayers: players.length,
-                      onResetScores: resetScores,
-                      onSetNumPlayers: setNumPlayers,
-                    ),
-                  ),
-                ),
+                  left: 0,
+                  right: 0,
+                  child: settingsPanel,
+                )
             ],
           );
         }
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: scorePanels,
+        return Stack(
+          alignment: Alignment.centerRight,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: scorePanels,
+            ),
+            settingsIconButton,
+            if (showingSettings)
+              Positioned(right: 60, top: 0, bottom: 0, child: settingsPanel)
+          ],
         );
       }),
     );

@@ -15,6 +15,7 @@ class SettingsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         TextButton(
           onPressed: onResetScores,
@@ -24,6 +25,7 @@ class SettingsPanel extends StatelessWidget {
           ),
         ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
               onPressed: numPlayers <= 1
