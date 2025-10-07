@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ScorePanel extends StatelessWidget {
   final Color _panelColor;
@@ -24,13 +25,14 @@ class ScorePanel extends StatelessWidget {
         color: _panelColor,
         child: FittedBox(
           fit: BoxFit.contain,
-          child: Center(
-            child: Text(
-              '$score',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(color: _textColor, fontWeight: FontWeight.w900),
+          child: Text(
+            '$score',
+            style: GoogleFonts.robotoMono(
+              textStyle: TextStyle(
+                color: _textColor,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ),

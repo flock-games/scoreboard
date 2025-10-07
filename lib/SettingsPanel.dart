@@ -37,9 +37,9 @@ class SettingsPanel extends StatelessWidget {
                   : () => onSetNumPlayers(numPlayers - 1),
               icon: const Icon(Icons.remove, color: Colors.white),
             ),
-            const Text(
-              "# players",
-              style: TextStyle(color: Colors.white),
+            Text(
+              "$numPlayers player${numPlayers > 1 ? 's' : ''}",
+              style: const TextStyle(color: Colors.white),
             ),
             IconButton(
                 onPressed: () => onSetNumPlayers(numPlayers + 1),
@@ -50,7 +50,8 @@ class SettingsPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              onPressed: () => onSetIncrementVal(incrementVal - 1),
+              onPressed: () =>
+                  onSetIncrementVal(incrementVal == 1 ? -1 : incrementVal - 1),
               icon: const Icon(Icons.remove, color: Colors.white),
             ),
             Text(
@@ -58,7 +59,8 @@ class SettingsPanel extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
             ),
             IconButton(
-                onPressed: () => onSetIncrementVal(incrementVal + 1),
+                onPressed: () => onSetIncrementVal(
+                    incrementVal == -1 ? 1 : incrementVal + 1),
                 icon: const Icon(Icons.add, color: Colors.white)),
           ],
         ),
