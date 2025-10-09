@@ -94,6 +94,7 @@ class _HomePageState extends State<HomePage> {
       for (var score in scores.rows) {
         setState(() {
           players.add(Player(
+            dbId: score.$id,
             name: score.data['name'],
             score: score.data['score'],
             bgColor: Color(int.parse(score.data['bgColor'])),
@@ -116,10 +117,22 @@ class _HomePageState extends State<HomePage> {
             score: player.score,
             panelColor: player.bgColor,
             textColor: player.textColor,
-            onIncrementScore: () => {
+            onIncrementScore: () {
               setState(() {
                 player.score += incrementVal;
-              })
+              });
+              if (player.dbId != null) {
+                // If the player has a dbId, update their score in the database
+                final databases = TablesDB(widget.client);
+                databases.updateRow(
+                  databaseId: '68e71a5f0012ae225c4e',
+                  tableId: 'scores',
+                  rowId: player.dbId!,
+                  data: {
+                    'score': player.score,
+                  },
+                );
+              }
             },
           ),
         ),
