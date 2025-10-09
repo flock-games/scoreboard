@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({
     super.key,
+    required this.onLoadBoard,
     required this.numPlayers,
     required this.incrementVal,
     required this.onResetScores,
@@ -13,6 +14,7 @@ class SettingsPanel extends StatelessWidget {
   final int numPlayers;
   final int incrementVal;
   final void Function() onResetScores;
+  final void Function(String code) onLoadBoard;
   final void Function(int n) onSetNumPlayers;
   final void Function(int val) onSetIncrementVal;
 
@@ -21,6 +23,19 @@ class SettingsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('ABCD', style: TextStyle(color: Colors.white)),
+            TextButton(
+              onPressed: () => onLoadBoard('ABCD'),
+              child: const Text(
+                'Load',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
         TextButton(
           onPressed: onResetScores,
           child: const Text(

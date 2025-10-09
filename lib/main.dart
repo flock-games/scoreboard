@@ -1,3 +1,4 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:starter/ScorePanel.dart';
 import 'package:starter/SettingsPanel.dart';
@@ -18,28 +19,26 @@ class ScoreboardApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Scoreboard'),
+      home: HomePage(title: 'Scoreboard'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomePage extends StatefulWidget {
+  HomePage({super.key, required this.title})
+      : client = Client()
+            .setProject('68e17c8e00373d10eb32')
+            .setEndpoint('https://sfo.cloud.appwrite.io/v1');
 
+  final Client client;
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  List<Player> players = [
-    Player(
-        name: 'Player 1',
-        score: 0,
-        bgColor: Colors.primaries[0],
-        textColor: Colors.white),
-  ];
+class _HomePageState extends State<HomePage> {
+  List<Player> players = [];
   int numPlayers = 2;
   int incrementVal = 1;
   bool showingSettings = false;
@@ -70,6 +69,41 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       incrementVal = val;
     });
+  }
+
+  void loadScoreboard(String boardCode) async {
+    final databases = TablesDB(widget.client);
+    try {
+      final boards = await databases.listRows(
+          databaseId: '68e71a5f0012ae225c4e',
+          tableId: 'boards',
+          queries: [Query.equal('code', 'abcd')]);
+      if (boards.rows.isEmpty) {
+        print('No matching boards found');
+        return;
+      }
+      final scores = await databases.listRows(
+          databaseId: '68e71a5f0012ae225c4e',
+          tableId: 'scores',
+          queries: [Query.equal('boardId', boards.rows[0].$id)]);
+      if (scores.rows.isEmpty) {
+        print('No scores found for board');
+        return;
+      }
+      players.clear();
+      for (var score in scores.rows) {
+        setState(() {
+          players.add(Player(
+            name: score.data['name'],
+            score: score.data['score'],
+            bgColor: Color(int.parse(score.data['bgColor'])),
+            textColor: Color(int.parse(score.data['textColor'])),
+          ));
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override
@@ -115,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onResetScores: resetScores,
         onSetNumPlayers: setNumPlayers,
         onSetIncrementVal: setIncrementVal,
+        onLoadBoard: loadScoreboard,
       ),
     );
 
