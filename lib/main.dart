@@ -62,9 +62,10 @@ class _HomePageState extends State<HomePage> {
     scoresSubscription =
         realtime.subscribe(['databases.$dbId.tables.scores.rows']);
 
-    scoresSubscription?.stream.listen((event) {
+    scoresSubscription?.stream.listen((data) {
       // Find player score update belongs to, or create new player if not found.
-      final payload = event.payload;
+      final event = data.events.first;
+      final payload = data.payload;
       final player = players.firstWhere((p) => p.dbId == payload['\$id'],
           orElse: () => Player(
                 dbId: payload['\$id'],
@@ -74,11 +75,16 @@ class _HomePageState extends State<HomePage> {
                 textColor: Color(int.parse(payload['textColor'])),
               ));
 
-      // Update their local score.
+      // Update local state to match.
       setState(() {
-        player.score = payload['score'];
-        if (!players.contains(player)) {
-          players.add(player);
+        if (event.endsWith('.delete')) {
+          players.remove(player);
+          return;
+        } else {
+          player.score = payload['score'];
+          if (!players.contains(player)) {
+            players.add(player);
+          }
         }
       });
     });
@@ -93,11 +99,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void setNumPlayers(int n) async {
-    // If this introduces a new player, create a record.
-    print('setNumPlayers $n');
     if (n > players.length) {
-      print('lets create a new player');
-      final res = await databases.createRow(
+      // This introduces a new player; create a record.
+      await databases.createRow(
           databaseId: dbId,
           tableId: 'scores',
           rowId: ID.unique(),
@@ -108,15 +112,11 @@ class _HomePageState extends State<HomePage> {
             'bgColor': '0xff000000',
             'textColor': '0xffffffff',
           });
-      print(res);
-      // setState(() {
-      //   players.add(newPlayer);
-      // });
     } else if (n < players.length) {
-      // If removing a player, just remove from local state for now.
-      setState(() {
-        players = players.sublist(0, n);
-      });
+      // This removes a player; delete their record.
+      print('we have ${players.length} players, removing one to get to $n');
+      await databases.deleteRow(
+          databaseId: dbId, tableId: 'scores', rowId: players[n].dbId!);
     }
   }
 
@@ -139,7 +139,6 @@ class _HomePageState extends State<HomePage> {
 
       boardId = boards.rows[0].$id;
 
-      // widget.client.sub
       final scores = await databases.listRows(
           databaseId: dbId,
           tableId: 'scores',
