@@ -25,12 +25,8 @@ class ScoreboardApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  HomePage({super.key, required this.title})
-      : client = Client()
-            .setProject('68e17c8e00373d10eb32')
-            .setEndpoint('https://sfo.cloud.appwrite.io/v1');
+  HomePage({super.key, required this.title});
 
-  final Client client;
   final String title;
 
   @override
@@ -42,27 +38,86 @@ class _HomePageState extends State<HomePage> {
   int numPlayers = 2;
   int incrementVal = 1;
   bool showingSettings = false;
+  String? boardId;
+
+  // TODO: move into config file
+  final projectId = "68e17c8e00373d10eb32";
+  final dbId = "68e71a5f0012ae225c4e";
+  RealtimeSubscription? scoresSubscription;
+  late final Client client;
+  late final TablesDB databases;
+
+  @override
+  void initState() {
+    super.initState();
+    client = Client()
+        .setProject(projectId)
+        .setEndpoint('https://sfo.cloud.appwrite.io/v1');
+    databases = TablesDB(client);
+    subscribeToScores();
+  }
+
+  void subscribeToScores() {
+    final realtime = Realtime(client);
+    scoresSubscription =
+        realtime.subscribe(['databases.$dbId.tables.scores.rows']);
+
+    scoresSubscription?.stream.listen((data) {
+      // Find player score update belongs to, or create new player if not found.
+      final event = data.events.first;
+      final payload = data.payload;
+      final player = players.firstWhere((p) => p.dbId == payload['\$id'],
+          orElse: () => Player(
+                dbId: payload['\$id'],
+                name: payload['name'],
+                score: 0,
+                bgColor: Color(int.parse(payload['bgColor'])),
+                textColor: Color(int.parse(payload['textColor'])),
+              ));
+
+      // Update local state to match.
+      setState(() {
+        if (event.endsWith('.delete')) {
+          players.remove(player);
+          return;
+        } else {
+          player.score = payload['score'];
+          if (!players.contains(player)) {
+            players.add(player);
+          }
+        }
+      });
+    });
+  }
 
   void resetScores() {
     setState(() {
       for (var player in players) {
-        player.score = 0;
+        updateScore(player, 0);
       }
     });
   }
 
-  void setNumPlayers(int n) {
-    setState(() {
-      players.clear();
-      for (int i = 0; i < n; i++) {
-        players.add(Player(
-          name: 'Player ${i + 1}',
-          score: 0,
-          bgColor: Colors.primaries[i % Colors.primaries.length],
-          textColor: Colors.white,
-        ));
-      }
-    });
+  void setNumPlayers(int n) async {
+    if (n > players.length) {
+      // This introduces a new player; create a record.
+      await databases.createRow(
+          databaseId: dbId,
+          tableId: 'scores',
+          rowId: ID.unique(),
+          data: {
+            'boardId': boardId,
+            'name': 'Player ${players.length + 1}',
+            'score': 0,
+            'bgColor': '0xff000000',
+            'textColor': '0xffffffff',
+          });
+    } else if (n < players.length) {
+      // This removes a player; delete their record.
+      print('we have ${players.length} players, removing one to get to $n');
+      await databases.deleteRow(
+          databaseId: dbId, tableId: 'scores', rowId: players[n].dbId!);
+    }
   }
 
   void setIncrementVal(int val) {
@@ -72,20 +127,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   void loadScoreboard(String boardCode) async {
-    final databases = TablesDB(widget.client);
     try {
       final boards = await databases.listRows(
-          databaseId: '68e71a5f0012ae225c4e',
+          databaseId: dbId,
           tableId: 'boards',
           queries: [Query.equal('code', 'abcd')]);
       if (boards.rows.isEmpty) {
         print('No matching boards found');
         return;
       }
+
+      boardId = boards.rows[0].$id;
+
       final scores = await databases.listRows(
-          databaseId: '68e71a5f0012ae225c4e',
+          databaseId: dbId,
           tableId: 'scores',
-          queries: [Query.equal('boardId', boards.rows[0].$id)]);
+          queries: [Query.equal('boardId', boardId)]);
       if (scores.rows.isEmpty) {
         print('No scores found for board');
         return;
@@ -94,6 +151,7 @@ class _HomePageState extends State<HomePage> {
       for (var score in scores.rows) {
         setState(() {
           players.add(Player(
+            dbId: score.$id,
             name: score.data['name'],
             score: score.data['score'],
             bgColor: Color(int.parse(score.data['bgColor'])),
@@ -101,6 +159,26 @@ class _HomePageState extends State<HomePage> {
           ));
         });
       }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void updateScore(Player player, int newScore) async {
+    setState(() {
+      player.score = newScore;
+    });
+
+    if (player.dbId == null) return;
+    try {
+      await databases.updateRow(
+        databaseId: dbId,
+        tableId: 'scores',
+        rowId: player.dbId!,
+        data: {
+          'score': newScore,
+        },
+      );
     } catch (e) {
       print(e);
     }
@@ -116,11 +194,8 @@ class _HomePageState extends State<HomePage> {
             score: player.score,
             panelColor: player.bgColor,
             textColor: player.textColor,
-            onIncrementScore: () => {
-              setState(() {
-                player.score += incrementVal;
-              })
-            },
+            onIncrementScore: () =>
+                updateScore(player, player.score + incrementVal),
           ),
         ),
       );
@@ -191,5 +266,11 @@ class _HomePageState extends State<HomePage> {
         );
       }),
     );
+  }
+
+  @override
+  void dispose() {
+    scoresSubscription?.close();
+    super.dispose();
   }
 }
