@@ -61,10 +61,10 @@ class _BoardSelectorState extends State<BoardSelector> {
             ],
           ),
           const SizedBox(height: 16),
-          // ElevatedButton(
-          //   onPressed: widget.onNewBoard,
-          //   child: const Text('New Board'),
-          // ),
+          ElevatedButton(
+            onPressed: widget.onNewBoard,
+            child: const Text('New Board'),
+          ),
         ],
       ),
     ));

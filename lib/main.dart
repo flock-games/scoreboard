@@ -132,23 +132,28 @@ class _HomePageState extends State<HomePage> {
       final boards = await databases.listRows(
           databaseId: dbId,
           tableId: 'boards',
-          queries: [Query.equal('code', 'abcd')]);
+          queries: [Query.equal('code', boardCode)]);
       if (boards.rows.isEmpty) {
         print('No matching boards found');
         return;
       }
 
-      board = Board(id: boards.rows[0].$id, code: boardCode);
+      setState(() {
+        board = Board(id: boards.rows[0].$id, code: boardCode);
+      });
 
       final scores = await databases.listRows(
           databaseId: dbId,
           tableId: 'scores',
           queries: [Query.equal('boardId', board!.id)]);
+
+      setState(() {
+        players.clear();
+      });
       if (scores.rows.isEmpty) {
         print('No scores found for board');
         return;
       }
-      players.clear();
       for (var score in scores.rows) {
         setState(() {
           players.add(Player(
@@ -185,6 +190,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void createNewBoard() async {
+    final id = ID.unique();
+    final code = ID.unique().substring(0, 4).toUpperCase();
+    await databases
+        .createRow(databaseId: dbId, tableId: 'boards', rowId: id, data: {
+      'code': code,
+    });
+    loadScoreboard(code);
+  }
+
   void leaveBoard() {
     setState(() {
       board = null;
@@ -196,7 +211,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (board == null) {
-      return BoardSelector(onLoadBoard: loadScoreboard, onNewBoard: () {});
+      return BoardSelector(
+          onLoadBoard: loadScoreboard, onNewBoard: createNewBoard);
     }
     List<Widget> scorePanels = <Widget>[];
     for (Player player in players) {
