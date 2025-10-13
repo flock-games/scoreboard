@@ -1,5 +1,5 @@
-name: starter
-description: "A new Flutter project."
+name: scoreboard
+description: "A clean and elegant real-time Scoreboard app"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.2
   appwrite: ^20.1.0
+  animated_text_kit: ^4.3.0
 
 dev_dependencies:
   flutter_test:

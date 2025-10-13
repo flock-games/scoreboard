@@ -1,8 +1,10 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
-import 'package:starter/ScorePanel.dart';
-import 'package:starter/SettingsPanel.dart';
-import 'package:starter/models/Player.dart';
+import 'package:scoreboard/board_selector.dart';
+import 'package:scoreboard/models/Board.dart';
+import 'package:scoreboard/score_panel.dart';
+import 'package:scoreboard/settings_panel.dart';
+import 'package:scoreboard/models/player.dart';
 
 void main() {
   runApp(const ScoreboardApp());
@@ -19,13 +21,13 @@ class ScoreboardApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: HomePage(title: 'Scoreboard'),
+      home: const HomePage(title: 'Scoreboard'),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  HomePage({super.key, required this.title});
+  const HomePage({super.key, required this.title});
 
   final String title;
 
@@ -38,7 +40,7 @@ class _HomePageState extends State<HomePage> {
   int numPlayers = 2;
   int incrementVal = 1;
   bool showingSettings = false;
-  String? boardId;
+  Board? board;
 
   // TODO: move into config file
   final projectId = "68e17c8e00373d10eb32";
@@ -106,7 +108,7 @@ class _HomePageState extends State<HomePage> {
           tableId: 'scores',
           rowId: ID.unique(),
           data: {
-            'boardId': boardId,
+            'boardId': board!.id,
             'name': 'Player ${players.length + 1}',
             'score': 0,
             'bgColor': '0xff000000',
@@ -114,7 +116,6 @@ class _HomePageState extends State<HomePage> {
           });
     } else if (n < players.length) {
       // This removes a player; delete their record.
-      print('we have ${players.length} players, removing one to get to $n');
       await databases.deleteRow(
           databaseId: dbId, tableId: 'scores', rowId: players[n].dbId!);
     }
@@ -137,12 +138,12 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      boardId = boards.rows[0].$id;
+      board = Board(id: boards.rows[0].$id, code: boardCode);
 
       final scores = await databases.listRows(
           databaseId: dbId,
           tableId: 'scores',
-          queries: [Query.equal('boardId', boardId)]);
+          queries: [Query.equal('boardId', board!.id)]);
       if (scores.rows.isEmpty) {
         print('No scores found for board');
         return;
@@ -184,8 +185,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void leaveBoard() {
+    setState(() {
+      board = null;
+      players.clear();
+      showingSettings = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (board == null) {
+      return BoardSelector(onLoadBoard: loadScoreboard, onNewBoard: () {});
+    }
     List<Widget> scorePanels = <Widget>[];
     for (Player player in players) {
       scorePanels.add(
@@ -219,12 +231,13 @@ class _HomePageState extends State<HomePage> {
     final settingsPanel = Container(
       color: Colors.black,
       child: SettingsPanel(
+        boardCode: board!.code,
         numPlayers: players.length,
         incrementVal: incrementVal,
         onResetScores: resetScores,
         onSetNumPlayers: setNumPlayers,
         onSetIncrementVal: setIncrementVal,
-        onLoadBoard: loadScoreboard,
+        onLeaveBoard: leaveBoard,
       ),
     );
 
