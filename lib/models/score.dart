@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-class Player {
+class Score {
   String? dbId;
   String name;
   Color bgColor;
   Color textColor;
-  int score;
+  int points;
 
-  Player({
+  Score({
     this.dbId,
     required this.name,
     this.bgColor = Colors.blue,
     this.textColor = Colors.white,
-    this.score = 0,
+    this.points = 0,
   });
 }

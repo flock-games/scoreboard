@@ -1,10 +1,10 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:scoreboard/board_selector.dart';
-import 'package:scoreboard/models/Board.dart';
+import 'package:scoreboard/models/board.dart';
 import 'package:scoreboard/score_panel.dart';
 import 'package:scoreboard/settings_panel.dart';
-import 'package:scoreboard/models/player.dart';
+import 'package:scoreboard/models/score.dart';
 
 void main() {
   runApp(const ScoreboardApp());
@@ -36,8 +36,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Player> players = [];
-  int numPlayers = 2;
+  List<Score> scores = [];
   int incrementVal = 1;
   bool showingSettings = false;
   Board? board;
@@ -65,14 +64,14 @@ class _HomePageState extends State<HomePage> {
         realtime.subscribe(['databases.$dbId.tables.scores.rows']);
 
     scoresSubscription?.stream.listen((data) {
-      // Find player score update belongs to, or create new player if not found.
+      // Find which score to update, or create new one if not found.
       final event = data.events.first;
       final payload = data.payload;
-      final player = players.firstWhere((p) => p.dbId == payload['\$id'],
-          orElse: () => Player(
+      final score = scores.firstWhere((p) => p.dbId == payload['\$id'],
+          orElse: () => Score(
                 dbId: payload['\$id'],
                 name: payload['name'],
-                score: 0,
+                points: 0,
                 bgColor: Color(int.parse(payload['bgColor'])),
                 textColor: Color(int.parse(payload['textColor'])),
               ));
@@ -80,12 +79,12 @@ class _HomePageState extends State<HomePage> {
       // Update local state to match.
       setState(() {
         if (event.endsWith('.delete')) {
-          players.remove(player);
+          scores.remove(score);
           return;
         } else {
-          player.score = payload['score'];
-          if (!players.contains(player)) {
-            players.add(player);
+          score.points = payload['points'];
+          if (!scores.contains(score)) {
+            scores.add(score);
           }
         }
       });
@@ -94,30 +93,30 @@ class _HomePageState extends State<HomePage> {
 
   void resetScores() {
     setState(() {
-      for (var player in players) {
-        updateScore(player, 0);
+      for (var score in scores) {
+        updateScore(score, 0);
       }
     });
   }
 
-  void setNumPlayers(int n) async {
-    if (n > players.length) {
-      // This introduces a new player; create a record.
+  void setNumScores(int n) async {
+    if (n > scores.length) {
+      // This introduces a new score; create a record.
       await databases.createRow(
           databaseId: dbId,
           tableId: 'scores',
           rowId: ID.unique(),
           data: {
             'boardId': board!.id,
-            'name': 'Player ${players.length + 1}',
-            'score': 0,
+            'name': 'Score ${scores.length + 1}',
+            'points': 0,
             'bgColor': '0xff000000',
             'textColor': '0xffffffff',
           });
-    } else if (n < players.length) {
-      // This removes a player; delete their record.
+    } else if (n < scores.length) {
+      // This removes a score; delete their record.
       await databases.deleteRow(
-          databaseId: dbId, tableId: 'scores', rowId: players[n].dbId!);
+          databaseId: dbId, tableId: 'scores', rowId: scores[n].dbId!);
     }
   }
 
@@ -148,7 +147,7 @@ class _HomePageState extends State<HomePage> {
           queries: [Query.equal('boardId', board!.id)]);
 
       setState(() {
-        players.clear();
+        this.scores.clear();
       });
       if (scores.rows.isEmpty) {
         print('No scores found for board');
@@ -156,13 +155,13 @@ class _HomePageState extends State<HomePage> {
       }
       for (var score in scores.rows) {
         setState(() {
-          players.add(Player(
-            dbId: score.$id,
-            name: score.data['name'],
-            score: score.data['score'],
-            bgColor: Color(int.parse(score.data['bgColor'])),
-            textColor: Color(int.parse(score.data['textColor'])),
-          ));
+          this.scores.add(Score(
+                dbId: score.$id,
+                name: score.data['name'],
+                points: score.data['points'],
+                bgColor: Color(int.parse(score.data['bgColor'])),
+                textColor: Color(int.parse(score.data['textColor'])),
+              ));
         });
       }
     } catch (e) {
@@ -170,19 +169,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void updateScore(Player player, int newScore) async {
+  void updateScore(Score score, int points) async {
     setState(() {
-      player.score = newScore;
+      score.points = points;
     });
 
-    if (player.dbId == null) return;
+    if (score.dbId == null) return;
     try {
       await databases.updateRow(
         databaseId: dbId,
         tableId: 'scores',
-        rowId: player.dbId!,
+        rowId: score.dbId!,
         data: {
-          'score': newScore,
+          'points': points,
         },
       );
     } catch (e) {
@@ -192,7 +191,9 @@ class _HomePageState extends State<HomePage> {
 
   void createNewBoard() async {
     final id = ID.unique();
-    final code = ID.unique().substring(0, 4).toUpperCase();
+    // Generate a random 4-character code.
+    final code =
+        (id.hashCode & 0xffff).toRadixString(16).padLeft(4, '0').toUpperCase();
     await databases
         .createRow(databaseId: dbId, tableId: 'boards', rowId: id, data: {
       'code': code,
@@ -203,7 +204,7 @@ class _HomePageState extends State<HomePage> {
   void leaveBoard() {
     setState(() {
       board = null;
-      players.clear();
+      scores.clear();
       showingSettings = false;
     });
   }
@@ -215,15 +216,15 @@ class _HomePageState extends State<HomePage> {
           onLoadBoard: loadScoreboard, onNewBoard: createNewBoard);
     }
     List<Widget> scorePanels = <Widget>[];
-    for (Player player in players) {
+    for (Score score in scores) {
       scorePanels.add(
         Expanded(
           child: ScorePanel(
-            score: player.score,
-            panelColor: player.bgColor,
-            textColor: player.textColor,
+            score: score.points,
+            panelColor: score.bgColor,
+            textColor: score.textColor,
             onIncrementScore: () =>
-                updateScore(player, player.score + incrementVal),
+                updateScore(score, score.points + incrementVal),
           ),
         ),
       );
@@ -248,10 +249,10 @@ class _HomePageState extends State<HomePage> {
       color: Colors.black,
       child: SettingsPanel(
         boardCode: board!.code,
-        numPlayers: players.length,
+        numScores: scores.length,
         incrementVal: incrementVal,
         onResetScores: resetScores,
-        onSetNumPlayers: setNumPlayers,
+        onSetNumScores: setNumScores,
         onSetIncrementVal: setIncrementVal,
         onLeaveBoard: leaveBoard,
       ),
