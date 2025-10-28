@@ -66,17 +66,17 @@ class SettingsPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              onPressed: () =>
-                  onSetIncrementVal(incrementVal == 1 ? -1 : incrementVal - 1),
+              onPressed: incrementVal <= 1
+                  ? null
+                  : () => onSetIncrementVal(incrementVal - 1),
               icon: const Icon(Icons.remove, color: Colors.white),
             ),
             Text(
-              incrementVal > 0 ? '+$incrementVal' : '$incrementVal',
+              '+$incrementVal',
               style: const TextStyle(color: Colors.white),
             ),
             IconButton(
-                onPressed: () => onSetIncrementVal(
-                    incrementVal == -1 ? 1 : incrementVal + 1),
+                onPressed: () => onSetIncrementVal(incrementVal + 1),
                 icon: const Icon(Icons.add, color: Colors.white)),
           ],
         ),

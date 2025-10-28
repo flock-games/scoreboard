@@ -225,6 +225,8 @@ class _HomePageState extends State<HomePage> {
             textColor: score.textColor,
             onIncrementScore: () =>
                 updateScore(score, score.points + incrementVal),
+            onDecrementScore: () =>
+                updateScore(score, score.points - incrementVal),
           ),
         ),
       );

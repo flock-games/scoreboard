@@ -6,6 +6,7 @@ class ScorePanel extends StatelessWidget {
   final Color _textColor;
   final int score;
   final VoidCallback onIncrementScore;
+  final VoidCallback onDecrementScore;
 
   const ScorePanel({
     super.key,
@@ -13,29 +14,58 @@ class ScorePanel extends StatelessWidget {
     required Color textColor,
     required this.score,
     required this.onIncrementScore,
+    required this.onDecrementScore,
   })  : _panelColor = panelColor,
         _textColor = textColor;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onIncrementScore,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        color: _panelColor,
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: Text(
-            '$score',
-            style: GoogleFonts.robotoMono(
-              textStyle: TextStyle(
-                color: _textColor,
-                height: 1,
-                fontWeight: FontWeight.w900,
+    return Container(
+      color: _panelColor,
+      child: Stack(
+        children: [
+          // Score display taking up full space
+          SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Text(
+                '$score',
+                style: GoogleFonts.robotoMono(
+                  textStyle: TextStyle(
+                    color: _textColor,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          // Invisible gesture zones overlaid on top
+          Column(
+            children: [
+              // Top half - increment zone
+              Expanded(
+                child: GestureDetector(
+                  onTap: onIncrementScore,
+                  behavior: HitTestBehavior.translucent,
+                  child: Container(
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+              // Bottom half - decrement zone
+              Expanded(
+                child: GestureDetector(
+                  onTap: onDecrementScore,
+                  behavior: HitTestBehavior.translucent,
+                  child: Container(
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
