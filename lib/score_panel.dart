@@ -111,6 +111,7 @@ class _ScorePanelState extends State<ScorePanel> with TickerProviderStateMixin {
                           color: widget._textColor,
                           height: 1,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: widget.score.abs() >= 10 ? -1.25 : 0.0,
                         ),
                       ),
                     ),
